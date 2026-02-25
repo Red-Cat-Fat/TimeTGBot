@@ -6,7 +6,7 @@ import re
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from bot.services.user_service import UserService
+from bot.db.repositories.timezones import TimezoneRepository
 
 UTC_OFFSET_RE = re.compile(r"^\s*(?:UTC\s*)?([+-])\s*(\d{1,2})(?::?(\d{2}))?\s*$", re.IGNORECASE)
 
@@ -51,42 +51,51 @@ class TimeConversionService:
 
     async def get_sender_timezone(self, user_id: int, chat_id: int) -> UtcOffset | None:
         async with self._session_factory() as session:
-            user_service = UserService(session)
-            timezone = await user_service.get_user_timezone(telegram_id=user_id, chat_id=chat_id)
+            timezone_repository = TimezoneRepository(session)
+            sender_offset = await timezone_repository.get_user_timezone(chat_id=chat_id, user_id=user_id)
 
-        if timezone is None:
+        if sender_offset is None:
             return None
 
-        return parse_utc_offset(timezone)
+        return UtcOffset(
+            raw=f"UTC {sender_offset // 60:+d}",
+            delta=timedelta(minutes=sender_offset),
+        )
 
     async def set_user_timezone(self, user_id: int, username: str | None, chat_id: int, timezone: str) -> None:
+        del username
+        parsed_timezone = parse_utc_offset(timezone)
+        if parsed_timezone is None:
+            return
+
+        minutes = int(parsed_timezone.delta.total_seconds() // 60)
         async with self._session_factory() as session:
-            user_service = UserService(session)
-            await user_service.set_user_timezone(
-                telegram_id=user_id,
-                username=username,
+            timezone_repository = TimezoneRepository(session)
+            await timezone_repository.set_user_timezone(
                 chat_id=chat_id,
-                timezone=timezone,
+                user_id=user_id,
+                offset=minutes,
             )
 
     async def get_chat_timezones(self, chat_id: int) -> list[UtcOffset]:
         async with self._session_factory() as session:
-            user_service = UserService(session)
-            timezones = await user_service.get_chat_timezones(chat_id=chat_id)
+            timezone_repository = TimezoneRepository(session)
+            rows = await timezone_repository.list_chat_timezones(chat_id=chat_id)
 
         seen: set[int] = set()
         offsets: list[UtcOffset] = []
-        for timezone in timezones:
-            offset = parse_utc_offset(timezone)
-            if offset is None:
-                continue
-
-            key = int(offset.delta.total_seconds())
+        for _, offset_minutes in rows:
+            key = offset_minutes * 60
             if key in seen:
                 continue
 
             seen.add(key)
-            offsets.append(offset)
+            offsets.append(
+                UtcOffset(
+                    raw=f"UTC {offset_minutes // 60:+d}",
+                    delta=timedelta(minutes=offset_minutes),
+                )
+            )
 
         return sorted(offsets, key=lambda item: item.delta)
 
