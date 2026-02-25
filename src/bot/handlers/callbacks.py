@@ -3,25 +3,26 @@ from __future__ import annotations
 import re
 
 from aiogram import F, Router
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import CallbackQuery
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from bot.db.repositories.timezones import TimezoneRepository
-from bot.handlers.commands import ADD_MY_TIME_CALLBACK_PREFIX, UTC_MAX_OFFSET, UTC_MIN_OFFSET
+from bot.handlers.commands import SET_MY_TIME_CALLBACK_PREFIX, UTC_MAX_OFFSET, UTC_MIN_OFFSET
 
-ADD_MY_TIME_CALLBACK_RE = re.compile(rf"^{ADD_MY_TIME_CALLBACK_PREFIX}:([+-]?\d{{1,2}})$")
+SET_MY_TIME_CALLBACK_RE = re.compile(rf"^{SET_MY_TIME_CALLBACK_PREFIX}:([+-]?\d{{1,2}})$")
 
 
 def create_callbacks_router(session_factory: async_sessionmaker) -> Router:
     router = Router()
 
-    @router.callback_query(F.data.startswith(ADD_MY_TIME_CALLBACK_PREFIX))
-    async def add_my_time_callback_handler(callback: CallbackQuery) -> None:
+    @router.callback_query(F.data.startswith(SET_MY_TIME_CALLBACK_PREFIX))
+    async def set_my_time_callback_handler(callback: CallbackQuery) -> None:
         if callback.data is None or callback.from_user is None or callback.message is None:
             await callback.answer("Некорректный callback payload.", show_alert=True)
             return
 
-        callback_match = ADD_MY_TIME_CALLBACK_RE.match(callback.data)
+        callback_match = SET_MY_TIME_CALLBACK_RE.match(callback.data)
         if callback_match is None:
             await callback.answer("Некорректный callback payload.", show_alert=True)
             return
@@ -44,6 +45,9 @@ def create_callbacks_router(session_factory: async_sessionmaker) -> Router:
             )
 
         await callback.answer("UTC сохранён")
-        await callback.message.delete()
+        try:
+            await callback.message.delete()
+        except TelegramBadRequest:
+            pass
 
     return router

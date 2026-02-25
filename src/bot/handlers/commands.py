@@ -6,7 +6,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 
 UTC_MIN_OFFSET = -12
 UTC_MAX_OFFSET = 14
-ADD_MY_TIME_CALLBACK_PREFIX = "add_my_time:set_utc"
+SET_MY_TIME_CALLBACK_PREFIX = "set_my_time:set_utc"
 
 
 def build_utc_keyboard() -> InlineKeyboardMarkup:
@@ -18,7 +18,7 @@ def build_utc_keyboard() -> InlineKeyboardMarkup:
         row.append(
             InlineKeyboardButton(
                 text=f"UTC {sign}{hour}",
-                callback_data=f"{ADD_MY_TIME_CALLBACK_PREFIX}:{hour:+d}",
+                callback_data=f"{SET_MY_TIME_CALLBACK_PREFIX}:{hour:+d}",
             )
         )
         if len(row) == 4:
@@ -34,8 +34,8 @@ def build_utc_keyboard() -> InlineKeyboardMarkup:
 def create_commands_router() -> Router:
     router = Router()
 
-    @router.message(Command("add_my_time"))
-    async def add_my_time_handler(message: Message) -> None:
+    @router.message(Command("set_my_time"))
+    async def set_my_time_handler(message: Message) -> None:
         await message.answer(
             "Выберите ваш UTC:",
             reply_markup=build_utc_keyboard(),

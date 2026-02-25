@@ -13,6 +13,6 @@ def create_common_router() -> Router:
 
     @router.message(F.text & ~F.text.regexp(TIME_RE))
     async def echo_message(message: Message) -> None:
-        await message.answer("Пока умею только команду /start")
+        await message.answer("Пока умею команды /start и /set_my_time")
 
     return router
