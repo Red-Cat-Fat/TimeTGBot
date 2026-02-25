@@ -4,6 +4,7 @@ import asyncio
 import logging
 
 from aiogram import Bot, Dispatcher
+from aiogram.types import BotCommand
 
 from bot.config import Settings
 from bot.db.session import create_engine, create_session_factory, init_db
@@ -22,6 +23,14 @@ async def run() -> None:
     await init_db(engine)
 
     bot = Bot(token=settings.telegram_token)
+    await bot.set_my_commands(
+        [
+            BotCommand(command="start", description="Запустить бота"),
+            BotCommand(command="set_my_time", description="Выбрать ваш UTC для текущего чата"),
+            BotCommand(command="help", description="Как пользоваться ботом"),
+        ]
+    )
+
     dispatcher = Dispatcher()
     dispatcher.include_router(create_start_router(session_factory))
     dispatcher.include_router(create_commands_router())
