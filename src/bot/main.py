@@ -7,6 +7,8 @@ from aiogram import Bot, Dispatcher
 
 from bot.config import Settings
 from bot.db.session import create_engine, create_session_factory, init_db
+from bot.handlers.callbacks import create_callbacks_router
+from bot.handlers.commands import create_commands_router
 from bot.handlers.common import create_common_router
 from bot.handlers.messages import create_messages_router
 from bot.handlers.start import create_start_router
@@ -22,6 +24,8 @@ async def run() -> None:
     bot = Bot(token=settings.telegram_token)
     dispatcher = Dispatcher()
     dispatcher.include_router(create_start_router(session_factory))
+    dispatcher.include_router(create_commands_router())
+    dispatcher.include_router(create_callbacks_router(session_factory))
     dispatcher.include_router(create_messages_router(session_factory))
     dispatcher.include_router(create_common_router())
 
