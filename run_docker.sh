@@ -16,7 +16,23 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 
 echo "Шаг 1/5: Обновляю проект из Git..."
-git -C "$ROOT_DIR" pull
+if ! git -C "$ROOT_DIR" pull; then
+  remote_url=$(git -C "$ROOT_DIR" remote get-url origin 2>/dev/null || echo "")
+
+  case "$remote_url" in
+    git@github.com:*)
+      https_url="https://github.com/${remote_url#git@github.com:}"
+      current_branch=$(git -C "$ROOT_DIR" rev-parse --abbrev-ref HEAD)
+
+      echo "Не удалось выполнить pull по SSH. Пробую HTTPS для origin/$current_branch..."
+      git -C "$ROOT_DIR" pull "$https_url" "$current_branch"
+      ;;
+    *)
+      echo "Ошибка: не удалось обновить проект из Git."
+      exit 1
+      ;;
+  esac
+fi
 
 default_database_url=$(awk -F= '/^DATABASE_URL=/{print substr($0, index($0, "=")+1)}' "$EXAMPLE_ENV")
 current_bot_token=""
