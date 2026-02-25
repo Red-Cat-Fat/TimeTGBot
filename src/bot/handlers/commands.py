@@ -34,6 +34,17 @@ def build_utc_keyboard() -> InlineKeyboardMarkup:
 def create_commands_router() -> Router:
     router = Router()
 
+    @router.message(Command("help"))
+    async def help_handler(message: Message) -> None:
+        await message.answer(
+            "Я умею:\n"
+            "• /set_my_time — выбрать ваш часовой пояс UTC для текущего чата.\n"
+            "• /help — показать эту подсказку.\n\n"
+            "После настройки UTC я автоматически нахожу время в сообщениях (например: `11:00`, "
+            "`В 11:00 созвон`) и отправляю конвертацию по часовым поясам участников чата.",
+            parse_mode="Markdown",
+        )
+
     @router.message(Command("set_my_time"))
     async def set_my_time_handler(message: Message) -> None:
         await message.answer(
