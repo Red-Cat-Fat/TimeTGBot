@@ -72,3 +72,23 @@
    ```bash
    docker compose up --build
    ```
+
+
+## Миграции
+
+В проекте добавлена SQL-миграция `migrations/001_create_chat_user_timezones.sql` для создания таблицы `chat_user_timezones` и уникального составного индекса `(chat_id, user_id)`.
+
+Пример применения миграции для SQLite:
+
+```bash
+sqlite3 bot.db < migrations/001_create_chat_user_timezones.sql
+```
+
+### Схема `chat_user_timezones`
+
+- `id` — первичный ключ.
+- `chat_id` — ID чата Telegram.
+- `user_id` — ID пользователя Telegram.
+- `utc_offset_minutes` — смещение пользователя относительно UTC в минутах.
+- `updated_at` — дата/время последнего обновления записи.
+- `ux_chat_user_timezones_chat_id_user_id` — уникальный составной индекс для upsert по `(chat_id, user_id)`.
